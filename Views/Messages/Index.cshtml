@@ -1,0 +1,203 @@
+﻿@model IEnumerable<Practice_web.Models.Message>
+@{
+    ViewData["Title"] = "Сообщения";
+}
+
+<h2 class="mt-4 mb-4">Ваши сообщения</h2>
+
+<p><strong>Пользователь:</strong> @ViewBag.UserFullName</p>
+
+<!-- Filter and Sort Form -->
+<div class="mt-4 mb-4">
+    <h3>Фильтры и сортировка</h3>
+    <form id="filterForm" method="get">
+        <input type="hidden" name="userId" value="@ViewBag.UserId"/>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="filterSender">Логин отправителя</label>
+                    <input type="text" class="form-control" id="filterSender" name="FilterSender" value="@ViewBag.FilterSender">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="filterStartDate">Дата отправки с</label>
+                    <input type="date" class="form-control" id="filterStartDate" name="FilterStartDate" value="@ViewBag.FilterStartDate">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="filterEndDate">Дата отправки по</label>
+                    <input type="date" class="form-control" id="filterEndDate" name="FilterEndDate" value="@ViewBag.FilterEndDate">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="filterStatus">Статус</label>
+                    <select class="form-control" id="filterStatus" name="FilterStatus">
+                        <option value="all" @(ViewBag.FilterStatus == "all" ? "selected" : "")>Все</option>
+                        <option value="unread" @(ViewBag.FilterStatus == "unread" ? "selected" : "")>Непрочитанные</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="sortOrder">Сортировка по дате</label>
+                    <select class="form-control" id="sortOrder" name="SortOrder">
+                        <option value="asc" @(ViewBag.SortOrder == "asc" ? "selected" : "")>По возрастанию</option>
+                        <option value="desc" @(ViewBag.SortOrder == "desc" ? "selected" : "")>По убыванию</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary mt-4">Применить</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h3 class="mt-4">Полученные сообщения</h3>
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>От кого</th>
+                    <th>Тема</th>
+                    <th>Дата</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var message in Model.Where(m => m.ToUserId == ViewBag.UserId))
+                {
+                    <tr class="@(message.IsRead ? "" : "table-warning")">
+                        <td>@message.FromUser!.Login</td>
+                        <td><a href="#" class="message-link" data-id="@message.Id">@message.Title</a></td>
+                        <td>@message.SentDate.ToString("g")</td>
+                    </tr>
+                }
+                @if (!Model.Any(m => m.ToUserId == ViewBag.UserId))
+                {
+                    <tr>
+                        <td colspan="3" class="text-center">Нет полученных сообщений</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h3 class="mt-4">Отправленные сообщения</h3>
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Кому</th>
+                    <th>Тема</th>
+                    <th>Дата</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var message in Model.Where(m => m.FromUserId == ViewBag.UserId))
+                {
+                    <tr>
+                        <td>@message.ToUser!.Login</td>
+                        <td><a href="#" class="message-link" data-id="@message.Id">@message.Title</a></td>
+                        <td>@message.SentDate.ToString("g")</td>
+                    </tr>
+                }
+                @if (!Model.Any(m => m.FromUserId == ViewBag.UserId))
+                {
+                    <tr>
+                        <td colspan="3" class="text-center">Нет отправленных сообщений</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Send Message Form -->
+<div class="mt-5">
+    <h3>Отправить сообщение</h3>
+    <form id="sendMessageForm" method="post" action="/Messages/Send">
+        <div class="form-group">
+            <label for="recipient">Логин получателя</label>
+            <input type="text" class="form-control" id="recipient" name="Recipient" required>
+        </div>
+        <div class="form-group">
+            <label for="subject">Тема сообщения</label>
+            <input type="text" class="form-control" id="subject" name="Subject" required>
+        </div>
+        <div class="form-group">
+            <label for="messageText">Текст сообщения</label>
+            <textarea class="form-control" id="messageText" name="MessageText" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Отправить</button>
+    </form>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalLabel">Сообщение</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="messageTextContent"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.message-link').on('click', function () {
+                var messageId = $(this).data('id');
+                $.get('/Messages/GetMessage?id=' + messageId, function (data) {
+                    $('#messageTextContent').text(data);
+                    $('#messageModal').modal('show');
+                });
+            });
+
+            $('#messageModal .btn-secondary, #messageModal .close').on('click', function () {
+                $('#messageModal').modal('hide');
+            });
+
+            $('#sendMessageForm').on('submit', function (e) {
+                e.preventDefault();
+                let formDataArray = $(this).serializeArray();
+                let dataJson = {};
+                $.each(formDataArray, function () {
+                    dataJson[this.name] = this.value;
+                });
+
+                // Add fromUserId to the data object
+                dataJson['fromUserId'] = @ViewBag.UserId;
+
+                // Serialize back to a query string
+                let queryString = $.param(dataJson);
+                $.ajax({
+                    url: '/Messages/Send',
+                    type: 'POST',
+                    data: queryString,
+                    success: function (response) {
+                        alert('Сообщение отправлено успешно.');
+                        location.reload();
+                    },
+                    error: function (response) {
+                        alert('Ошибка при отправке сообщения: ');
+                    }
+                });
+            });
+        });
+    </script>
+}
